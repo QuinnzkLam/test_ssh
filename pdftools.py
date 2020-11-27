@@ -37,28 +37,41 @@ def save_text_to_word(content, file_path):
     doc.save(file_path)
 
 
+def remove_control_characters(content):
+    mpa = dict.fromkeys(range(32))
+    return content.translate(mpa)
+
+
 def pdf_to_word(pdf_file_path, word_file_path):
     content = read_from_pdf(pdf_file_path)
     save_text_to_word(content, word_file_path)
 
 
-tasks = []
-with ProcessPoolExecutor(max_workers=5) as executor:
-    for file in os.listdir(pdf_folder):
-        extension_name = os.path.splitext(file)[1]
-        if extension_name != '.pdf':
-            continue
-        file_name = os.path.splitext(file)[0]
-        pdf_file = pdf_folder + '/' + file
-        word_file = word_folder + '/' + file_name + '.docx'
-        print('正在处理: ', file)
-        result = executor.submit(pdf_to_word, pdf_file, word_file)
-        tasks.append(result)
-while True:
-    exit_flag = True
-    for task in tasks:
-        if not task.done():
-            exit_flag = False
-    if exit_flag:
-        print('完成')
-        exit(0)
+def main():
+    config_parser = ConfigParser()
+    config_parser.read('config.cfg')
+    config = config_parser['default']
+
+    tasks = []
+    with ProcessPoolExecutor(max_workers=5) as executor:
+        for file in os.listdir(pdf_folder):
+            extension_name = os.path.splitext(file)[1]
+            if extension_name != '.pdf':
+                continue
+            file_name = os.path.splitext(file)[0]
+            pdf_file = pdf_folder + '/' + file
+            word_file = word_folder + '/' + file_name + '.docx'
+            print('正在处理: ', file)
+            result = executor.submit(pdf_to_word, pdf_file, word_file)
+            tasks.append(result)
+    while True:
+        exit_flag = True
+        for task in tasks:
+            if not task.done():
+                exit_flag = False
+        if exit_flag:
+            print('完成')
+            exit(0)
+
+if __name__ == '__main__':
+    main()
